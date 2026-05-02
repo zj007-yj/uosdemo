@@ -2,11 +2,11 @@
 
 在 **统信 UOS / Linux 桌面** 上用 **GStreamer** 同时预览两路 RTSP（避免 libmpv 在该环境下常见问题）。
 
-仓库：<https://github.com/qq4833887/uos_demo>
+仓库：<https://github.com/zj007-yj/uosdemo>
 
 ```bash
-git clone https://github.com/qq4833887/uos_demo.git
-cd uos_demo
+git clone https://github.com/zj007-yj/uosdemo.git
+cd uosdemo
 ```
 
 固定地址（可按需改 `lib/demo_urls.dart`）：
