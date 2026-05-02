@@ -52,8 +52,10 @@ class DemoHomePage extends StatelessWidget {
         title: const Text('诊断日志'),
         content: SingleChildScrollView(
           child: SelectableText(
-            '日志文件（可复制）：\n$path\n\n'
+            '日志文件（.txt，可复制路径）：\n$path\n\n'
             '说明：\n'
+            '• 固定扩展名 .txt，便于记事本或打包回传。\n'
+            '• 启动时按顺序尝试可写目录，实际路径以上方为准。\n'
             '• 启动、切 H264/H265、Dart 异常会写入该文件。\n'
             '• GStreamer 原生错误需终端环境变量重跑，例如：\n'
             '  GST_DEBUG=2 ./uos_demo\n'

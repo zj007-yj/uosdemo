@@ -3,9 +3,12 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 
-/// 运行期诊断日志（默认写入用户目录，避免 bundle 只读路径）。
+/// 运行期诊断日志：固定 **.txt** 扩展名，便于目标机用各种方式打开。
+/// 按顺序尝试可写路径（HOME 异常、只读目录、无用户目录等仍可尽量落盘）。
 class DemoLog {
   DemoLog._();
+
+  static const String _fileName = 'video_debug.txt';
 
   static File? _file;
   static String? pathForUi;
@@ -22,21 +25,47 @@ class DemoLog {
     }
   }
 
+  static Future<File?> _resolveWritableLogFile() async {
+    final home = Platform.environment['HOME'] ?? '';
+    final tmp = Platform.environment['TMPDIR'] ?? '';
+    final exeDir = File(Platform.resolvedExecutable).parent.path;
+
+    final candidates = <String>[
+      if (home.isNotEmpty) '$home/.cache/uos_demo/$_fileName',
+      if (tmp.isNotEmpty) '$tmp/uos_demo_$_fileName',
+      '/tmp/uos_demo_$_fileName',
+      '${Directory.current.path}/$_fileName',
+      '$exeDir/$_fileName',
+    ];
+
+    for (final path in candidates) {
+      try {
+        final f = File(path);
+        await f.parent.create(recursive: true);
+        final sink = f.openWrite(mode: FileMode.append);
+        await sink.close();
+        return f;
+      } catch (_) {
+        continue;
+      }
+    }
+    return null;
+  }
+
   static Future<void> init() async {
     try {
-      final home = Platform.environment['HOME'];
-      if (home != null && home.isNotEmpty) {
-        final dir = Directory('$home/.cache/uos_demo');
-        if (!await dir.exists()) {
-          await dir.create(recursive: true);
-        }
-        _file = File('${dir.path}/video_debug.log');
-      } else {
-        _file = File('video_debug.log');
+      _file = await _resolveWritableLogFile();
+      pathForUi = _file?.path;
+      if (_file == null) {
+        debugPrint('DemoLog: 无法找到可写路径保存 $_fileName');
+        return;
       }
-      pathForUi = _file!.path;
       await append('[app]', 'startup exe=${Platform.resolvedExecutable}');
-      await append('[app]', 'cwd=${Directory.current.path} HOME=$home');
+      await append('[app]', 'cwd=${Directory.current.path}');
+      await append(
+        '[app]',
+        'env HOME=${Platform.environment['HOME']} TMPDIR=${Platform.environment['TMPDIR']}',
+      );
       await append('[app]', 'log=$pathForUi');
     } catch (e, st) {
       debugPrint('DemoLog.init failed: $e\n$st');
@@ -59,10 +88,5 @@ class DemoLog {
     final msg =
         '${details.exceptionAsString()} ${details.stack ?? ''}'.trim();
     unawaited(append('[FlutterError]', msg));
-  }
-
-  static bool logPlatformError(Object error, StackTrace stack) {
-    unawaited(append('[platformError]', '$error\n$stack'));
-    return true;
   }
 }
