@@ -31,7 +31,7 @@ sudo apt-get install -y \
 
 ## GitHub Actions（ARM64）
 
-CI 使用 **`ubuntu-24.04-arm`** 原生编译 **linux/arm64** `bundle`，与 **ARM64 统信 UOS / 麒麟** 等机器架构一致。
+CI 在 **Ubuntu 20.04 / linux/arm64** 容器内编译（宿主机用 QEMU 仿真），使二进制链接 **较旧的 glibc / libstdc++**，减轻在旧版统信 UOS 上出现 **`GLIBC_2.34` / `GLIBCXX_3.4.xx` not found** 的情况。若在仍较旧的系统上运行失败，在目标机执行 `ldd --version` 核对 glibc 版本。
 
 推送到 `main` / `master` 后，在 Actions 里下载工件 **`uos-demo-linux-arm64-bundle`**，解压后进入 `bundle` 目录：
 
@@ -40,7 +40,11 @@ chmod +x uos_demo
 ./uos_demo
 ```
 
-运行机仍需安装上文中的 GStreamer 运行时包（`gstreamer1.0-plugins-good` 等），无需安装 Flutter。
+运行机仍需安装上文中的 GStreamer **运行时**包（`gstreamer1.0-plugins-good` 等），无需安装 Flutter。
+
+### 若仍提示找不到 GLIBC / GLIBCXX
+
+说明 CI 产物的链接版本仍高于目标机系统库。可选：**在同一台 UOS 上安装 Flutter 源码构建**（与本机 glibc 完全一致），或在本机 Docker（与目标发行版一致的镜像）里执行仓库中的 `scripts/docker-build-linux-arm64.sh` 逻辑自定义构建。
 
 ## 运行（本机有 Flutter SDK）
 

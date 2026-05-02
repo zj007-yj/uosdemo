@@ -12,49 +12,28 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # 在 ubuntu-24.04-arm 原生编译会链接 GLIBC_2.34+，旧版统信 UOS 无法运行。
+  # 改为：x64 宿主机 + QEMU + Ubuntu 20.04 arm64 容器，产物面向 glibc 2.31 系系统。
   linux-arm64:
-    runs-on: ubuntu-24.04-arm
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install Linux build deps
+      - name: Set up QEMU (linux/arm64)
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: linux/arm64
+
+      - name: Build in Ubuntu 20.04 (arm64, older glibc)
         run: |
-          set -eux
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
-            ca-certificates curl git unzip xz-utils zip \
-            clang cmake ninja-build pkg-config \
-            libgtk-3-dev liblzma-dev \
-            libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev
-
-      # subosito/flutter-action 在部分 Linux ARM64 + stable 组合下会报
-      # “Unable to determine Flutter version … architecture: arm64”。
-      # 与官方仓库 clone + precache 更稳（与 Docker 内构建方式一致）。
-      - name: Install Flutter from git (stable)
-        run: |
-          set -eux
-          git clone https://github.com/flutter/flutter.git -b stable --depth 1 "$HOME/flutter"
-          echo "$HOME/flutter/bin" >> "$GITHUB_PATH"
-
-      - name: Flutter version
-        run: |
-          set -eux
-          flutter --version
-          flutter doctor -v
-
-      - name: Enable Linux desktop & precache
-        run: |
-          set -eux
-          flutter config --no-analytics
-          flutter config --enable-linux-desktop
-          flutter precache --linux
-
-      - name: Dependencies
-        run: flutter pub get
-
-      - name: Build release bundle (linux-arm64)
-        run: flutter build linux --release
+          chmod +x scripts/docker-build-linux-arm64.sh
+          docker run --rm --platform linux/arm64 \
+            -v "${GITHUB_WORKSPACE}:/workspace" \
+            -w /workspace \
+            ubuntu:20.04 \
+            bash /workspace/scripts/docker-build-linux-arm64.sh
 
       - name: Upload bundle
         uses: actions/upload-artifact@v4
