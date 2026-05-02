@@ -1,4 +1,4 @@
-name: Build Linux bundle
+name: Build Linux bundle (ARM64)
 
 on:
   push:
@@ -12,16 +12,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  linux:
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - runner: ubuntu-latest
-            arch: x64
-          - runner: ubuntu-24.04-arm
-            arch: arm64
-    runs-on: ${{ matrix.runner }}
+  linux-arm64:
+    runs-on: ubuntu-24.04-arm
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -47,12 +39,12 @@ jobs:
       - name: Dependencies
         run: flutter pub get
 
-      - name: Build release bundle
+      - name: Build release bundle (linux-arm64)
         run: flutter build linux --release
 
       - name: Upload bundle
         uses: actions/upload-artifact@v4
         with:
-          name: uos-demo-linux-${{ matrix.arch }}-bundle
-          path: build/linux/${{ matrix.arch }}/release/bundle/
+          name: uos-demo-linux-arm64-bundle
+          path: build/linux/arm64/release/bundle/
           retention-days: 14

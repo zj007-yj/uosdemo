@@ -29,24 +29,33 @@ sudo apt-get install -y \
   gstreamer1.0-libav
 ```
 
-## GitHub Actions
+## GitHub Actions（ARM64）
 
-推送到 `main` / `master` 后自动构建 **x64** 与 **arm64** Linux `bundle`，在 Actions 页下载 `uos-demo-linux-*-bundle` 工件。
+CI 使用 **`ubuntu-24.04-arm`** 原生编译 **linux/arm64** `bundle`，与 **ARM64 统信 UOS / 麒麟** 等机器架构一致。
 
-## 运行
+推送到 `main` / `master` 后，在 Actions 里下载工件 **`uos-demo-linux-arm64-bundle`**，解压后进入 `bundle` 目录：
+
+```bash
+chmod +x uos_demo
+./uos_demo
+```
+
+运行机仍需安装上文中的 GStreamer 运行时包（`gstreamer1.0-plugins-good` 等），无需安装 Flutter。
+
+## 运行（本机有 Flutter SDK）
 
 ```bash
 flutter pub get
 flutter run -d linux
 ```
 
-## 发布构建
+## 本机构建发布包
 
 ```bash
 flutter build linux --release
 ```
 
-可执行文件与依赖在 `build/linux/x64/release/bundle/`（架构以本机为准）。
+ARM64 本机输出目录：`build/linux/arm64/release/bundle/`。x86_64 本机则为 `build/linux/x64/release/bundle/`。
 
 ## 说明
 
