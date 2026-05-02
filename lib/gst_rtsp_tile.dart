@@ -1,0 +1,73 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_gstreamer_player/flutter_gstreamer_player.dart';
+
+/// 单路 RTSP，GStreamer 管道（TCP + H264/H265 可切换）。
+class GstRtspTile extends StatefulWidget {
+  const GstRtspTile({
+    super.key,
+    required this.title,
+    required this.rtspUrl,
+  });
+
+  final String title;
+  final String rtspUrl;
+
+  @override
+  State<GstRtspTile> createState() => _GstRtspTileState();
+}
+
+class _GstRtspTileState extends State<GstRtspTile> {
+  bool _preferH265 = false;
+
+  String _pipeline(String url, {required bool preferH265}) {
+    final depay = preferH265
+        ? 'rtph265depay ! h265parse'
+        : 'rtph264depay ! h264parse';
+    return '''
+rtspsrc location="$url" protocols=tcp latency=200 drop-on-latency=true !
+$depay !
+decodebin !
+videoconvert !
+video/x-raw,format=RGBA !
+appsink name=sink
+''';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final url = widget.rtspUrl;
+    final pipeline = _pipeline(url, preferH265: _preferH265);
+
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          ListTile(
+            dense: true,
+            title: Text(widget.title),
+            subtitle: Text(
+              url,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 11),
+            ),
+            trailing: TextButton(
+              onPressed: () => setState(() => _preferH265 = !_preferH265),
+              child: Text(_preferH265 ? 'H265→H264' : 'H264→H265'),
+            ),
+          ),
+          Expanded(
+            child: ColoredBox(
+              color: Colors.black,
+              child: GstPlayer(
+                key: ValueKey<String>('$url|$_preferH265'),
+                pipeline: pipeline,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
