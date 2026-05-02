@@ -105,24 +105,21 @@ static void flutter_gstreamer_player_plugin_handle_method_call(
     const int64_t texture_id =
         fl_value_get_int(fl_value_lookup_string(arguments, "textureId"));
 
-    FlTexture* found =
-        fl_texture_registrar_lookup_texture(self->texture_registrar,
-                                            texture_id);
-    if (found != nullptr) {
-      fl_texture_registrar_unregister_texture(self->texture_registrar,
-                                              found);
-      for (auto iter = g_video_outlets.begin();
-           iter != g_video_outlets.end();) {
-        if (iter->second != nullptr &&
-            FL_TEXTURE(iter->second) == found) {
-          const int32_t pid = iter->first;
-          g_object_unref(iter->second);
-          iter = g_video_outlets.erase(iter);
-          g_players->Dispose(pid);
-          break;
-        }
-        ++iter;
+    // 旧版 flutter_linux 可能没有 fl_texture_registrar_lookup_texture，
+    // 用本地 map + fl_texture_get_id 匹配即可。
+    for (auto iter = g_video_outlets.begin(); iter != g_video_outlets.end();) {
+      VideoOutlet* outlet = iter->second;
+      if (outlet != nullptr &&
+          fl_texture_get_id(FL_TEXTURE(outlet)) == texture_id) {
+        fl_texture_registrar_unregister_texture(self->texture_registrar,
+                                                FL_TEXTURE(outlet));
+        const int32_t pid = iter->first;
+        g_object_unref(outlet);
+        iter = g_video_outlets.erase(iter);
+        g_players->Dispose(pid);
+        break;
       }
+      ++iter;
     }
 
     g_autoptr(FlValue) ok = fl_value_new_bool(true);
