@@ -46,6 +46,10 @@ chmod +x uos_demo
 
 说明 CI 产物的链接版本仍高于目标机系统库。可选：**在同一台 UOS 上安装 Flutter 源码构建**（与本机 glibc 完全一致），或在本机 Docker（与目标发行版一致的镜像）里执行仓库中的 `scripts/docker-build-linux-arm64.sh` 逻辑自定义构建。
 
+### 关于 `LateInitializationError: textureId` / GLib 报错
+
+pub.dev 上 **`flutter_gstreamer_player` 0.0.3** 在 Dart 层误用 `late int textureId`，首帧 `build` 会在异步初始化完成前访问未赋值字段，从而触发 **LateInitializationError**，并可能连带出现 GLib 断言与段错误。本仓库已将插件 **vendoring 到 `packages/flutter_gstreamer_player`** 并修正初始化与占位 UI；请重新拉代码并 **重新打 CI 包** 后再在 UOS 上运行。
+
 ## 运行（本机有 Flutter SDK）
 
 ```bash

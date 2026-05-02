@@ -32,8 +32,9 @@ dependencies:
     sdk: flutter
 
   cupertino_icons: ^1.0.8
-  # Linux/UOS：用 GStreamer 播 RTSP，避免 libmpv 在该环境下不兼容
-  flutter_gstreamer_player: ^0.0.3
+  # 上游 0.0.3 在 Dart 侧有 late textureId / isInitialized 缺陷，已 fork 到 packages 并修复
+  flutter_gstreamer_player:
+    path: packages/flutter_gstreamer_player
 
 dev_dependencies:
   flutter_test:

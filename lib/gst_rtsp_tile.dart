@@ -95,6 +95,9 @@ appsink name=sink
               child: GstPlayer(
                 key: ValueKey<String>('$url|$_preferH265'),
                 pipeline: pipeline,
+                onDiagnostic: (msg) => unawaited(
+                  DemoLog.append('[GstPlayer]', '${widget.title}: $msg'),
+                ),
               ),
             ),
           ),
