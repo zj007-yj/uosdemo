@@ -57,6 +57,13 @@ flutter build linux --release
 
 ARM64 本机输出目录：`build/linux/arm64/release/bundle/`。x86_64 本机则为 `build/linux/x64/release/bundle/`。
 
+## 诊断日志（排查无画面）
+
+- 程序启动后写入 **`~/.cache/uos_demo/video_debug.log`**（`$HOME` 未设置时退化为当前目录下的 `video_debug.log`）。
+- 记录内容：启动路径、每路视频 tile 初始化、切换 H264/H265、Dart/Flutter 未捕获异常。
+- RTSP 在日志里会 **打码**（隐藏密码），仍保留主机与路径。
+- 界面右上角 **文档图标** 可查看日志绝对路径与 **GST_DEBUG** 用法（GStreamer 原生层需在终端带环境变量运行，例如 `GST_DEBUG=2 ./uos_demo`）。
+
 ## 说明
 
 - 界面每路提供 **H264 / H265** 切换；若花屏或无画面，点对应按钮试另一种编码。

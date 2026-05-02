@@ -1,12 +1,26 @@
+import 'dart:async';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
+import 'demo_log.dart';
 import 'demo_urls.dart';
 import 'gst_rtsp_tile.dart';
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await DemoLog.init();
+  FlutterError.onError = (FlutterErrorDetails details) {
+    DemoLog.logFlutterError(details);
+    FlutterError.presentError(details);
+  };
+  PlatformDispatcher.instance.onError = (Object error, StackTrace stack) {
+    unawaited(
+      DemoLog.append('[platformError]', '$error\n$stack'),
+    );
+    return false;
+  };
   runApp(const UosRtspDemoApp());
 }
 
@@ -28,6 +42,33 @@ class UosRtspDemoApp extends StatelessWidget {
 
 class DemoHomePage extends StatelessWidget {
   const DemoHomePage({super.key});
+
+  void _showLogHelp(BuildContext context) {
+    final path = DemoLog.pathForUi ?? '(未初始化)';
+    unawaited(DemoLog.append('[ui]', 'opened log help dialog'));
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('诊断日志'),
+        content: SingleChildScrollView(
+          child: SelectableText(
+            '日志文件（可复制）：\n$path\n\n'
+            '说明：\n'
+            '• 启动、切 H264/H265、Dart 异常会写入该文件。\n'
+            '• GStreamer 原生错误需终端环境变量重跑，例如：\n'
+            '  GST_DEBUG=2 ./uos_demo\n'
+            '  或 GST_DEBUG=rtspsrc:4 ./uos_demo\n',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('关闭'),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -52,6 +93,13 @@ class DemoHomePage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('UOS RTSP 双路演示 (GStreamer)'),
+        actions: [
+          IconButton(
+            tooltip: '日志路径与排查说明',
+            icon: const Icon(Icons.article_outlined),
+            onPressed: () => _showLogHelp(context),
+          ),
+        ],
       ),
       body: SafeArea(
         child: LayoutBuilder(

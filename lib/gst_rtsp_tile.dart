@@ -1,5 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_gstreamer_player/flutter_gstreamer_player.dart';
+
+import 'demo_log.dart';
 
 /// 单路 RTSP，GStreamer 管道（TCP + H264/H265 可切换）。
 class GstRtspTile extends StatefulWidget {
@@ -34,6 +38,27 @@ appsink name=sink
   }
 
   @override
+  void initState() {
+    super.initState();
+    unawaited(DemoLog.append(
+      '[video]',
+      'tile init title=${widget.title} url=${DemoLog.maskRtspUrl(widget.rtspUrl)}',
+    ));
+  }
+
+  @override
+  void didUpdateWidget(covariant GstRtspTile oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.rtspUrl != widget.rtspUrl ||
+        oldWidget.title != widget.title) {
+      unawaited(DemoLog.append(
+        '[video]',
+        'tile props title=${widget.title} url=${DemoLog.maskRtspUrl(widget.rtspUrl)}',
+      ));
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final url = widget.rtspUrl;
     final pipeline = _pipeline(url, preferH265: _preferH265);
@@ -53,7 +78,14 @@ appsink name=sink
               style: const TextStyle(fontSize: 11),
             ),
             trailing: TextButton(
-              onPressed: () => setState(() => _preferH265 = !_preferH265),
+              onPressed: () {
+                setState(() => _preferH265 = !_preferH265);
+                unawaited(DemoLog.append(
+                  '[video]',
+                  'user toggle codec -> ${_preferH265 ? "H265" : "H264"} '
+                  'title=${widget.title}',
+                ));
+              },
               child: Text(_preferH265 ? 'H265→H264' : 'H264→H265'),
             ),
           ),
