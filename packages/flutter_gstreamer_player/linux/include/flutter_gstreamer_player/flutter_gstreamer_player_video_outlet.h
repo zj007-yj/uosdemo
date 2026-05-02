@@ -4,6 +4,8 @@
 #include <flutter_linux/flutter_linux.h>
 #include <gtk/gtk.h>
 
+#include <vector>
+
 struct _VideoOutletClass {
   FlPixelBufferTextureClass parent_class;
 };
@@ -13,6 +15,8 @@ struct VideoOutletPrivate {
   uint8_t* buffer = nullptr;
   int32_t video_width = 0;
   int32_t video_height = 0;
+  /// 持久缓冲，避免 GStreamer unmap 后 Flutter 渲染线程仍读野指针。
+  std::vector<uint8_t> rgba_storage;
 };
 
 G_DECLARE_DERIVABLE_TYPE(VideoOutlet, video_outlet, MY_OPENGL, VIDEO_OUTLET,

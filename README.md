@@ -46,9 +46,9 @@ chmod +x uos_demo
 
 说明 CI 产物的链接版本仍高于目标机系统库。可选：**在同一台 UOS 上安装 Flutter 源码构建**（与本机 glibc 完全一致），或在本机 Docker（与目标发行版一致的镜像）里执行仓库中的 `scripts/docker-build-linux-arm64.sh` 逻辑自定义构建。
 
-### 关于 `LateInitializationError: textureId` / GLib 报错
+### 关于 `LateInitializationError: textureId` / GLib `g_value_set_boxed` / 段错误
 
-pub.dev 上 **`flutter_gstreamer_player` 0.0.3** 在 Dart 层误用 `late int textureId`，首帧 `build` 会在异步初始化完成前访问未赋值字段，从而触发 **LateInitializationError**，并可能连带出现 GLib 断言与段错误。本仓库已将插件 **vendoring 到 `packages/flutter_gstreamer_player`** 并修正初始化与占位 UI；请重新拉代码并 **重新打 CI 包** 后再在 UOS 上运行。
+pub.dev 上 **`flutter_gstreamer_player` 0.0.3** 不仅 Dart 侧有问题，**Linux 原生还把 GObject 指针当成 Flutter Texture ID 返回**，与当前 Flutter Linux 嵌入 **必须使用 `fl_texture_get_id()`** 不符，会在引擎侧触发 **GLib-GObject CRITICAL** 乃至 **段错误**。本仓库在 `packages/flutter_gstreamer_player` 内已修正：**注册纹理后用 `fl_texture_get_id` 回传**、**dispose 时 unregister**、**帧数据拷贝到自有缓冲**（避免 GStreamer unmap 后渲染线程读野指针）。请 **重新拉代码并重新下载 CI 打出的 bundle** 再在 UOS 上运行。
 
 ## 运行（本机有 Flutter SDK）
 
