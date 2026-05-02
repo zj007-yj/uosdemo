@@ -62,13 +62,6 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
-  flutter_gstreamer_player:
-    dependency: "direct main"
-    description:
-      path: "packages/flutter_gstreamer_player"
-      relative: true
-    source: path
-    version: "0.0.3"
   flutter_lints:
     dependency: "direct dev"
     description:

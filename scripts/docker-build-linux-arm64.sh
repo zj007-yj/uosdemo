@@ -8,8 +8,7 @@ apt-get update
 apt-get install -y --no-install-recommends \
   ca-certificates curl git unzip xz-utils zip \
   clang cmake ninja-build pkg-config \
-  libgtk-3-dev liblzma-dev \
-  libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev
+  libgtk-3-dev liblzma-dev
 
 git config --global --add safe.directory /workspace
 
@@ -22,4 +21,6 @@ flutter precache --linux
 
 cd /workspace
 flutter pub get
-flutter build linux --release
+# 便于核对目标机是否为新制品（Actions 传入 GIT_SHA）
+flutter build linux --release \
+  --dart-define=GIT_SHA="${GIT_SHA:-unknown}"

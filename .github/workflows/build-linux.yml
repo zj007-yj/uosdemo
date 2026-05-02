@@ -27,9 +27,12 @@ jobs:
           platforms: linux/arm64
 
       - name: Build in Ubuntu 20.04 (arm64, older glibc)
+        env:
+          GIT_SHA: ${{ github.sha }}
         run: |
           chmod +x scripts/docker-build-linux-arm64.sh
           docker run --rm --platform linux/arm64 \
+            -e GIT_SHA \
             -v "${GITHUB_WORKSPACE}:/workspace" \
             -w /workspace \
             ubuntu:20.04 \

@@ -1,6 +1,8 @@
 # uos_demo
 
-在 **统信 UOS / Linux 桌面** 上用 **GStreamer** 同时预览两路 RTSP（避免 libmpv 在该环境下常见问题）。
+在 **统信 UOS / Linux 桌面** 上演示两路 **RTSP**：点击按钮用系统自带的 **`ffplay`**（FFmpeg）打开独立播放窗口。
+
+此前嵌入 **GStreamer / Flutter 纹理插件** 在部分统信环境下会在启动阶段触发 **GLib 崩溃与段错误**，且与 Flutter Linux 版本强相关；为「拷过去就能用」，本仓库 **不再嵌入该插件**，改为调用你已验证可播 RTSP 的 **ffplay** 链路。
 
 仓库：<https://github.com/zj007-yj/uosdemo>
 
@@ -12,69 +14,51 @@ cd uosdemo
 固定地址（可按需改 `lib/demo_urls.dart`）：
 
 - `192.168.3.104`：`rtsp://admin:yanjing123@192.168.3.104/0`
-- `192.168.3.119`：默认同样使用路径 `/0`；若设备路径不同，只改 `DemoUrls.rtsp119`。
+- `192.168.3.119`：默认路径 `/0`，不对则只改 `DemoUrls.rtsp119`。
 
-## 目标机依赖（UOS / Debian 系）
+## 目标机依赖（运行 bundle）
 
-构建或运行前请安装 GStreamer 开发包与常用插件（名称因发行版略有差异）：
+只需 **GTK 运行时**（一般桌面已有）和 **ffmpeg（含 ffplay）**：
 
 ```bash
 sudo apt-get update
-sudo apt-get install -y \
-  libgtk-3-dev \
-  libgstreamer1.0-dev \
-  libgstreamer-plugins-base1.0-dev \
-  gstreamer1.0-plugins-good \
-  gstreamer1.0-plugins-bad \
-  gstreamer1.0-libav
+sudo apt-get install -y ffmpeg
 ```
+
+无需安装 GStreamer 开发包或 Flutter。
+
+## 核对是否为新打的包
+
+应用内 **ⓘ 关于** 中显示 **`GIT_SHA`**。CI 构建会写入当前 Git 提交；若为 `local-dev` 表示本机 `flutter build` 未带 `--dart-define`。
 
 ## GitHub Actions（ARM64）
 
-CI 在 **Ubuntu 20.04 / linux/arm64** 容器内编译（宿主机用 QEMU 仿真），使二进制链接 **较旧的 glibc / libstdc++**，减轻在旧版统信 UOS 上出现 **`GLIBC_2.34` / `GLIBCXX_3.4.xx` not found** 的情况。若在仍较旧的系统上运行失败，在目标机执行 `ldd --version` 核对 glibc 版本。
-
-推送到 `main` / `master` 后，在 Actions 里下载工件 **`uos-demo-linux-arm64-bundle`**，解压后进入 `bundle` 目录：
+CI 在 **Ubuntu 20.04 / linux/arm64** 容器内编译（宿主机 QEMU），产物兼容较旧 glibc。下载 **`uos-demo-linux-arm64-bundle`** 后：
 
 ```bash
 chmod +x uos_demo
 ./uos_demo
 ```
 
-运行机仍需安装上文中的 GStreamer **运行时**包（`gstreamer1.0-plugins-good` 等），无需安装 Flutter。
+构建参数含 `--dart-define=GIT_SHA=...`，便于与崩溃日志对照版本。
 
 ### 若仍提示找不到 GLIBC / GLIBCXX
 
-说明 CI 产物的链接版本仍高于目标机系统库。可选：**在同一台 UOS 上安装 Flutter 源码构建**（与本机 glibc 完全一致），或在本机 Docker（与目标发行版一致的镜像）里执行仓库中的 `scripts/docker-build-linux-arm64.sh` 逻辑自定义构建。
+在同一台 UOS 上用 Flutter 源码构建，或在「与目标系统一致」的 Docker 镜像里执行 `scripts/docker-build-linux-arm64.sh`。
 
-### 关于 `LateInitializationError: textureId` / GLib `g_value_set_boxed` / 段错误
-
-pub.dev 上 **`flutter_gstreamer_player` 0.0.3** 不仅 Dart 侧有问题，**Linux 原生还把 GObject 指针当成 Flutter Texture ID 返回**，与当前 Flutter Linux 嵌入 **必须使用 `fl_texture_get_id()`** 不符，会在引擎侧触发 **GLib-GObject CRITICAL** 乃至 **段错误**。本仓库在 `packages/flutter_gstreamer_player` 内已修正：**注册纹理后用 `fl_texture_get_id` 回传**、**dispose 时 unregister**、**帧数据拷贝到自有缓冲**（避免 GStreamer unmap 后渲染线程读野指针）。请 **重新拉代码并重新下载 CI 打出的 bundle** 再在 UOS 上运行。
-
-## 运行（本机有 Flutter SDK）
+## 本机运行 / 打包
 
 ```bash
 flutter pub get
 flutter run -d linux
+flutter build linux --release --dart-define=GIT_SHA=$(git rev-parse --short HEAD)
 ```
 
-## 本机构建发布包
+## 诊断日志
 
-```bash
-flutter build linux --release
-```
-
-ARM64 本机输出目录：`build/linux/arm64/release/bundle/`。x86_64 本机则为 `build/linux/x64/release/bundle/`。
-
-## 诊断日志（排查无画面）
-
-- 日志为 **纯文本 `.txt`**，默认文件名 **`video_debug.txt`**，便于目标机记事本打开或随工单回传。
-- 启动时按顺序尝试写入（第一个可写即采用）：`$HOME/.cache/uos_demo/` → `$TMPDIR/` → **`/tmp/uos_demo_video_debug.txt`** → **当前工作目录** → **可执行文件所在目录**（同名 `video_debug.txt` 或带前缀文件见上）。
-- 实际路径以程序内 **文档图标** 对话框为准；`$HOME` 未设置或目录只读时会自动落到 `/tmp` 或 bundle 旁。
-- 记录内容：启动路径、每路视频 tile 初始化、切换 H264/H265、Dart/Flutter 未捕获异常。
-- RTSP 在日志里会 **打码**（隐藏密码），仍保留主机与路径。
-- 界面右上角 **文档图标** 可查看日志绝对路径与 **GST_DEBUG** 用法（GStreamer 原生层需在终端带环境变量运行，例如 `GST_DEBUG=2 ./uos_demo`）。
+仍写入 **`video_debug.txt`**（路径规则见程序内「日志」按钮）。RTSP 在日志中会打码。
 
 ## 说明
 
-- 界面每路提供 **H264 / H265** 切换；若花屏或无画面，点对应按钮试另一种编码。
-- 在非 Linux 上执行会提示仅支持 Linux，便于在 Windows 上只做代码编辑与 `flutter analyze`。
+- 每路 **独立 ffplay 窗口**；关闭播放器窗口不影响主程序。
+- 在非 Linux 上打开工程仅用于编辑；运行界面仅在 Linux 可用。

@@ -4,9 +4,10 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
+import 'build_info.dart';
 import 'demo_log.dart';
 import 'demo_urls.dart';
-import 'gst_rtsp_tile.dart';
+import 'rtsp_tile.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -43,6 +44,29 @@ class UosRtspDemoApp extends StatelessWidget {
 class DemoHomePage extends StatelessWidget {
   const DemoHomePage({super.key});
 
+  void _showAbout(BuildContext context) {
+    unawaited(DemoLog.append('[ui]', 'opened about'));
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('关于 / 版本'),
+        content: SelectableText(
+          '构建提交 GIT_SHA：\n$kGitSha\n\n'
+          '若此处为 local-dev，说明是本机调试构建；'
+          'CI 制品应显示 GitHub 提交哈希。\n\n'
+          '请确认已安装 ffplay：\n'
+          'sudo apt install ffmpeg',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('关闭'),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _showLogHelp(BuildContext context) {
     final path = DemoLog.pathForUi ?? '(未初始化)';
     unawaited(DemoLog.append('[ui]', 'opened log help dialog'));
@@ -56,10 +80,7 @@ class DemoHomePage extends StatelessWidget {
             '说明：\n'
             '• 固定扩展名 .txt，便于记事本或打包回传。\n'
             '• 启动时按顺序尝试可写目录，实际路径以上方为准。\n'
-            '• 启动、切 H264/H265、Dart 异常会写入该文件。\n'
-            '• GStreamer 原生错误需终端环境变量重跑，例如：\n'
-            '  GST_DEBUG=2 ./uos_demo\n'
-            '  或 GST_DEBUG=rtspsrc:4 ./uos_demo\n',
+            '• 启动、ffplay 异常会写入该文件。\n',
           ),
         ),
         actions: [
@@ -94,10 +115,15 @@ class DemoHomePage extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('UOS RTSP 双路演示 (GStreamer)'),
+        title: const Text('UOS RTSP（ffplay）'),
         actions: [
           IconButton(
-            tooltip: '日志路径与排查说明',
+            tooltip: '版本 / ffplay 依赖',
+            icon: const Icon(Icons.info_outline),
+            onPressed: () => _showAbout(context),
+          ),
+          IconButton(
+            tooltip: '日志路径',
             icon: const Icon(Icons.article_outlined),
             onPressed: () => _showLogHelp(context),
           ),
@@ -109,13 +135,13 @@ class DemoHomePage extends StatelessWidget {
             final narrow = constraints.maxWidth < 760;
             final tiles = <Widget>[
               Expanded(
-                child: GstRtspTile(
+                child: RtspFfplayTile(
                   title: '摄像头 192.168.3.104（路径 /0）',
                   rtspUrl: DemoUrls.rtsp104,
                 ),
               ),
               Expanded(
-                child: GstRtspTile(
+                child: RtspFfplayTile(
                   title: '摄像头 192.168.3.119',
                   rtspUrl: DemoUrls.rtsp119,
                 ),

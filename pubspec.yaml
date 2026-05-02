@@ -1,5 +1,5 @@
 name: uos_demo
-description: UOS / Linux RTSP demo (GStreamer). See https://github.com/zj007-yj/uosdemo
+description: UOS / Linux RTSP demo (ffplay). See https://github.com/zj007-yj/uosdemo
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -32,9 +32,6 @@ dependencies:
     sdk: flutter
 
   cupertino_icons: ^1.0.8
-  # 上游 0.0.3 在 Dart 侧有 late textureId / isInitialized 缺陷，已 fork 到 packages 并修复
-  flutter_gstreamer_player:
-    path: packages/flutter_gstreamer_player
 
 dev_dependencies:
   flutter_test:
